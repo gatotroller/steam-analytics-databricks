@@ -1,0 +1,17 @@
+bundle:
+  name: steam_analytics_platform
+
+resources:
+  jobs:
+    daily_ingest:
+      name: Extractor
+      tasks:
+        - task_key: Extract_Data
+          notebook_task:
+            notebook_path: ./src/bronze/extractor.py
+
+targets:
+  dev:
+    default: true
+    workspace:
+      host: https://dbc-aae6f8f8-1286.cloud.databricks.com
