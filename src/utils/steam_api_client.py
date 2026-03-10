@@ -119,7 +119,7 @@ async def get_all_player_counts(api_key, games):
 
 # GET APP DETAILS
 
-async def fetch_app_details(session, semaphore, appid, max_retries=3):
+async def fetch_app_details(session, semaphore, appid):
     params = {"appids": appid, "l": "english", "cc": "us"}
 
     async with semaphore:
