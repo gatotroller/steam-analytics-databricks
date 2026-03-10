@@ -6,12 +6,12 @@ import asyncio
 STEAM_GetAppList_URL = "https://api.steampowered.com/IStoreService/GetAppList/v1/"
 STEAM_GetPlayerCount_URL = "https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/"
 STEAM_GetAppDetails_URL = "https://store.steampowered.com/api/appdetails"
+STEAM_GetAppReviews_URL = "https://store.steampowered.com/appreviews"
 
 # GET APP LIST
 
 def get_app_list(steam_key):
 
-    #URLS
     have_more = True
     apps = []
     last_appid = None
@@ -183,6 +183,82 @@ async def get_all_apps_details(games):
     retry_round = 1
     while failed_games and retry_round <= 3:
         await asyncio.sleep(450)
+        print(f"Retry round {retry_round}: {len(failed_games)} games")
+        retry_list = failed_games.copy()
+        failed_games.clear()
+        counter["done"] = 0
+
+        async with aiohttp.ClientSession() as session:
+            tasks = [fetch_with_progress(session, game) for game in retry_list]
+            retry_results = await asyncio.gather(*tasks)
+
+        valid.extend([r for r in retry_results if r is not None and not r.get("retry")])
+        retry_round += 1
+
+    print(f"Final: {len(valid)} results out of {total} games")
+    return valid
+
+# GET APP REVIEWS
+
+async def fetch_reviews(session, semaphore, appid, max_retries=3):
+    url = f"{STEAM_GetAppReviews_URL}/{appid}"
+    params = {"json": 1, "language": "all", "purchase_type": "all", "l": "english"}
+
+    async with semaphore:
+        for attempt in range(max_retries):
+            await asyncio.sleep(0.1)
+
+            async with session.get(url, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    query_summary = data["query_summary"]
+                    return {
+                        "appid": appid,
+                        "review_score": query_summary.get("review_score"),
+                        "review_score_desc": query_summary.get("review_score_desc"),
+                        "total_positive": query_summary.get("total_positive"),
+                        "total_negative": query_summary.get("total_negative"),
+                        "total_reviews": query_summary.get("total_reviews"),
+                        "extracted_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
+                    }
+                elif response.status in [403, 420, 429]:
+                    print(f"Rate limited appid {appid}, attempt {attempt}")
+                    await asyncio.sleep(5 ** (attempt + 1))
+                else:
+                    # Error (404) — don't retry
+                    return None
+
+        # All retries exhausted — was rate limited
+        return {"retry": True, "appid": appid}
+    
+async def get_all_reviews(games):
+    semaphore = asyncio.Semaphore(20)
+    failed_games = []
+    counter = {"done": 0}
+    lock = asyncio.Lock()
+    total = len(games)
+
+    async def fetch_with_progress(session, game):
+        result = await fetch_reviews(session, semaphore, game["appid"])
+        async with lock:
+            counter["done"] += 1
+            if counter["done"] % 1000 == 0:
+                print(f"Progress: {counter['done']}/{total}")
+            if result and result.get("retry"):
+                failed_games.append(game)
+            return result
+
+    async with aiohttp.ClientSession() as session:
+        tasks = [fetch_with_progress(session, game) for game in games]
+        results = await asyncio.gather(*tasks)
+
+    valid = [r for r in results if r is not None and not r.get("retry")]
+    print(f"Got {len(valid)} results. Failed: {len(failed_games)}")
+
+    # Retry failed games with lower concurrency
+    retry_round = 1
+    while failed_games and retry_round <= 3:
+        await asyncio.sleep(150)
         print(f"Retry round {retry_round}: {len(failed_games)} games")
         retry_list = failed_games.copy()
         failed_games.clear()
