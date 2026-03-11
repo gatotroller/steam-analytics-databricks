@@ -8,7 +8,7 @@ resources:
       tasks:
         - task_key: Extract_Data
           notebook_task:
-            notebook_path: ./src/bronze/extractor.py
+            notebook_path: ./src/bronze/app_list.py
 
 targets:
   dev:
