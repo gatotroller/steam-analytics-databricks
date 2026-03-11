@@ -1,18 +1,20 @@
 # Databricks notebook source
 import sys
-sys.path.append("/Workspace/Users/eduardo.jafet31oct@gmail.com/.bundle/steam_analytics_platform/dev/files/src")
+import os
+path_current = os.path.dirname(os.path.abspath(__file__))
+path_src = os.path.abspath(os.path.join(path_current, ".."))
+
+if path_src not in sys.path:
+    sys.path.append(path_src)
 
 # COMMAND ----------
-from databricks.sdk.runtime import dbutils
 from utils.steam_api_client import get_app_list
-from pyspark.sql import SparkSession
 
-spark = SparkSession.builder.getOrCreate()
 api_key = dbutils.secrets.get(scope="steam", key="api-key")
 
 # COMMAND ----------
 spark.sql("CREATE CATALOG IF NOT EXISTS steam_analytics")
-spark.sql("CREATE SCHEMA IF NOT EXISTS bronze")
+spark.sql("CREATE SCHEMA IF NOT EXISTS steam_analytics.bronze")
 
 apps = get_app_list(steam_key=api_key)
 
