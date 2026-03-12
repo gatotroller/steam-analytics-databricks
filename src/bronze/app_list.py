@@ -1,7 +1,14 @@
 # Databricks notebook source
 import sys
 import os
-path_current = os.path.dirname(os.path.abspath(__file__))
+
+#LOCAL
+try:
+    path_current = os.path.dirname(os.path.abspath(__file__))
+#DATABRICKS UI
+except NameError:
+    path_current = os.getcwd()
+    
 path_src = os.path.abspath(os.path.join(path_current, ".."))
 
 if path_src not in sys.path:

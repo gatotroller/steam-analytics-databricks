@@ -54,28 +54,35 @@ async def fetch_player_count(session, semaphore, api_key, appid, max_retries=5):
 
     async with semaphore:
         for attempt in range(max_retries):
-            await asyncio.sleep(0.1)
-
-            async with session.get(STEAM_GetPlayerCount_URL, params=params) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    return {
-                        "appid": appid,
-                        "player_count": data["response"].get("player_count", 0),
-                        "extracted_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
-                    }
-                elif response.status in [420, 429]:
-                    print(f"Rate limited appid {appid}, attempt {attempt}")
-                    await asyncio.sleep(10 * (attempt + 1))
-                else:
-                    # Genuine error (403, 404, etc.) — don't retry
-                    return None
-
+            await asyncio.sleep(0.2)
+            try:
+                async with session.get(STEAM_GetPlayerCount_URL, params=params) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        return {
+                            "appid": appid,
+                            "player_count": data["response"].get("player_count", 0),
+                            "extracted_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
+                        }
+                    elif response.status in [420, 429]:
+                        print(f"Rate limited appid {appid}, attempt {attempt}")
+                        await asyncio.sleep(10 * (attempt + 1))
+                    else:
+                        # Genuine error (403, 404, etc.) — don't retry
+                        print(f"Error desconocido: {response.status}")
+                        return None
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                print(f"Connection error appid {appid}, attempt {attempt}: {e}")
+                await asyncio.sleep(5 * (attempt + 1))
+                continue
+            except (KeyError, TypeError, ValueError) as e:
+                print(f"Bad data format for appid {appid}: {e}")
+                return None
         # All retries exhausted — was rate limited
         return {"retry": True, "appid": appid}
     
 async def get_all_player_counts(api_key, games):
-    semaphore = asyncio.Semaphore(100)
+    semaphore = asyncio.Semaphore(75)
     failed_games = []
     counter = {"done": 0}
     lock = asyncio.Lock()

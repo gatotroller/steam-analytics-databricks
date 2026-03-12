@@ -1,28 +1,43 @@
 # Databricks notebook source
 import sys
-sys.path.append("/Workspace/Users/eduardo.jafet31oct@gmail.com/.bundle/steam_analytics_platform/dev/files/src")
+import os
+import asyncio
+
+#LOCAL
+try:
+    path_current = os.path.dirname(os.path.abspath(__file__))
+#DATABRICKS UI
+except NameError:
+    path_current = os.getcwd()
+
+path_src = os.path.abspath(os.path.join(path_current, ".."))
+
+if path_src not in sys.path:
+    sys.path.append(path_src)
 
 # COMMAND ----------
-from databricks.sdk.runtime import dbutils
-from pyspark.sql import SparkSession
 from utils.steam_api_client import get_all_player_counts
 
-spark = SparkSession.builder.getOrCreate()
 api_key = dbutils.secrets.get(scope="steam", key="api-key")
+dbutils.fs.mkdirs("/Volumes/steam_analytics/bronze/landing/steam_player_count/")
+spark.sql("CREATE VOLUME IF NOT EXISTS steam_analytics.bronze.landing")
+spark.sql("CREATE VOLUME IF NOT EXISTS steam_analytics.bronze.checkpoint")
 
 # COMMAND ----------
 df_apps = spark.read.table("steam_analytics.bronze.app_list")
 games_list = df_apps.select("appid").toPandas().to_dict("records")
-player_count = get_all_player_counts(steam_key=api_key, games=games_list)
+
+# IMPORTANT: await seems like an error just in local not in Databricks UI
+player_count = await get_all_player_counts(api_key=api_key, games=games_list)
 
 # COMMAND ----------
-from pyspark.sql.types import StructType, StructField, IntegerType, StringType, TimestampType
+from pyspark.sql.types import StructType, StructField, IntegerType, TimestampType
 import datetime
 import json
 
 schema_player_count = StructType([
     StructField("appid", IntegerType(), True),
-    StructField("player_count", StringType(), True),
+    StructField("player_count", IntegerType(), True),
     StructField("extracted_at", TimestampType(), True),
 ])
 
