@@ -18,11 +18,11 @@ if path_src not in sys.path:
 from utils.steam_api_client import get_app_list
 
 api_key = dbutils.secrets.get(scope="steam", key="api-key")
-
-# COMMAND ----------
 spark.sql("CREATE CATALOG IF NOT EXISTS steam_analytics")
 spark.sql("CREATE SCHEMA IF NOT EXISTS steam_analytics.bronze")
+app_list_name = "steam_analytics.bronze.app_list"
 
+# COMMAND ----------
 apps = get_app_list(steam_key=api_key)
 
 # COMMAND ----------
@@ -35,5 +35,27 @@ schema_app_list = StructType([
     StructField("price_change_number", LongType(), True)
 ])
 
+if spark.catalog.tableExists(app_list_name):
+    df_apps_list_old = spark.read.table(app_list_name)
+else:
+    df_apps_list_old = spark.createDataFrame([], schema=schema_app_list)
 df_apps_list = spark.createDataFrame(apps, schema=schema_app_list)
+
+# COMMAND ----------
+from pyspark.sql import functions as F
+
+# Games that its price change
+df_changed_prices = (
+    df_apps_list.alias("new")
+        .join(df_apps_list_old.alias("old"), on="appid", how="inner")
+        .where("new.price_change_number != old.price_change_number")
+        .select("new.appid")
+)
+
+# Games_to_extract to use on app_details notebook
+df_games_to_extract = df_changed_prices.withColumn("batch_date", F.current_timestamp())
+df_games_to_extract.write.mode("append").saveAsTable("steam_analytics.bronze.games_to_update")
+
+# COMMAND ----------
+# Overwrite the new bronze table
 df_apps_list.write.mode("overwrite").saveAsTable("steam_analytics.bronze.app_list")
