@@ -24,6 +24,7 @@ def get_app_list(steam_key):
         "include_videos": False,
         "include_hardware": False,
     }
+    extraction_timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
     while have_more:
 
@@ -41,7 +42,13 @@ def get_app_list(steam_key):
         if status_code != 200:
             raise Exception(f"API call failed with status {status_code}")
 
-        apps.extend(data["response"]["apps"])
+        batch_apps = data["response"]["apps"]
+
+        for app in batch_apps:
+            app["extracted_at"] = extraction_timestamp
+
+        apps.extend(batch_apps)
+        
         have_more = data["response"].get("have_more_results", False)
         last_appid = data["response"].get("last_appid")
 
@@ -126,7 +133,7 @@ async def get_all_player_counts(api_key, games):
 
 # GET APP DETAILS
 
-async def fetch_app_details(session, semaphore, appid):
+async def fetch_app_details(session, semaphore, appid, extracted_at):
     params = {"appids": appid, "l": "english", "cc": "us"}
 
     async with semaphore:
@@ -140,6 +147,7 @@ async def fetch_app_details(session, semaphore, appid):
                     details = app_data["data"]
                     return {
                         "appid": appid,
+                        "extracted_at": extracted_at,
                         "is_free": details.get("is_free"),
                         "short_description": details.get("short_description"),
                         "header_image": details.get("header_image"),
@@ -150,7 +158,7 @@ async def fetch_app_details(session, semaphore, appid):
                         "genres": details.get("genres"),
                         "categories": details.get("categories"),
                         "release_date": details.get("release_date"),
-                        "extracted_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
+                        "extracted_at_game": datetime.datetime.now(datetime.timezone.utc).isoformat()
                     }
                 else:
                     return None
@@ -170,7 +178,7 @@ async def get_all_apps_details(games):
     total = len(games)
 
     async def fetch_with_progress(session, game):
-        result = await fetch_app_details(session, semaphore, game["appid"])
+        result = await fetch_app_details(session, semaphore, game.get("appid"), game.get("extracted_at"))
         async with lock:
             counter["done"] += 1
             if counter["done"] % 1000 == 0:
@@ -280,3 +288,10 @@ async def get_all_reviews(games):
 
     print(f"Final: {len(valid)} results out of {total} games")
     return valid
+
+# Logical shift
+def get_logical_shift(dt_utc):
+    if dt_utc.hour < 16:
+        return dt_utc.date() - datetime.timedelta(days=1)
+    else:
+        return dt_utc.date()

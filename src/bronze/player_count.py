@@ -44,8 +44,8 @@ schema_player_count = StructType([
 file_name = f"player_count_{datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
 landing_zone = f"/Volumes/steam_analytics/bronze/landing/steam_player_count/{file_name}"
 
-with open(landing_zone, "w", encoding="utf-8") as archivo_json:
-    json.dump(player_count, archivo_json, ensure_ascii=False, indent=3)
+with open(landing_zone, "w", encoding="utf-8") as json_file:
+    json.dump(player_count, json_file, ensure_ascii=False, indent=3)
 
 (spark.readStream
     .format("cloudFiles")
