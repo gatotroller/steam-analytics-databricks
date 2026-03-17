@@ -50,6 +50,7 @@ with open(landing_zone, "w", encoding="utf-8") as json_file:
 (spark.readStream
     .format("cloudFiles")
     .option("cloudFiles.format", "json")
+    .option("cloudFiles.cleanSource", "delete")
     .option("cloudFiles.rescuedDataColumn", "_rescued_data")
     .schema(schema_player_count)
     .load("/Volumes/steam_analytics/bronze/landing/steam_player_count/")

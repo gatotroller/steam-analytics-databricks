@@ -2,6 +2,7 @@ import requests
 import datetime
 import aiohttp
 import asyncio
+import json
 
 STEAM_GetAppList_URL = "https://api.steampowered.com/IStoreService/GetAppList/v1/"
 STEAM_GetPlayerCount_URL = "https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/"
@@ -177,7 +178,14 @@ async def get_all_apps_details(games):
     lock = asyncio.Lock()
     total = len(games)
 
+    #buffer
+    buffer = []
+    file_batch_number = 1
+    volume_path = "/Volumes/steam_analytics/bronze/landing/steam_app_details"
+
     async def fetch_with_progress(session, game):
+        nonlocal file_batch_number
+
         result = await fetch_app_details(session, semaphore, game.get("appid"), game.get("extracted_at"))
         async with lock:
             counter["done"] += 1
@@ -185,7 +193,22 @@ async def get_all_apps_details(games):
                 print(f"Progress: {counter['done']}/{total}")
             if result and result.get("retry"):
                 failed_games.append(game)
-            return result
+            elif result:
+                buffer.append(result)
+
+                if len(buffer) >= 200:
+                    timestamp_str = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d_%H%M%S')
+                    file_name = f"app_details_{timestamp_str}_batch_{file_batch_number}.json"
+                    landing_zone = f"{volume_path}/{file_name}"
+                    with open(landing_zone, "w", encoding="utf-8") as json_file:
+                        json.dump(buffer, json_file, ensure_ascii=False)
+                    
+                    print(f"[{counter['done']}/{total}] Guardado en disco: {file_name}")
+
+                    buffer.clear()
+                    file_batch_number += 1
+                
+        return result
 
     async with aiohttp.ClientSession() as session:
         tasks = [fetch_with_progress(session, game) for game in games]
@@ -201,7 +224,6 @@ async def get_all_apps_details(games):
         print(f"Retry round {retry_round}: {len(failed_games)} games")
         retry_list = failed_games.copy()
         failed_games.clear()
-        counter["done"] = 0
 
         async with aiohttp.ClientSession() as session:
             tasks = [fetch_with_progress(session, game) for game in retry_list]
@@ -209,6 +231,15 @@ async def get_all_apps_details(games):
 
         valid.extend([r for r in retry_results if r is not None and not r.get("retry")])
         retry_round += 1
+    
+    if len(buffer) > 0:
+        timestamp_str = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d_%H%M%S')
+        file_name = f"app_details_{timestamp_str}_batch_{file_batch_number}.json"
+        landing_zone = f"{volume_path}/{file_name}"
+        with open(landing_zone, "w", encoding="utf-8") as json_file:
+            json.dump(buffer, json_file, ensure_ascii=False)
+
+        buffer.clear()
 
     print(f"Final: {len(valid)} results out of {total} games")
     return valid

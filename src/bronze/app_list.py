@@ -50,14 +50,14 @@ if exists_table:
 apps = get_app_list(steam_key=api_key)
 
 # COMMAND ----------
-from pyspark.sql.types import StructType, StructField, IntegerType, StringType, LongType, TimestampType
+from pyspark.sql.types import StructType, StructField, IntegerType, StringType, LongType
 
 schema_app_list = StructType([
     StructField("appid", IntegerType(), True),
     StructField("name", StringType(), True),
     StructField("last_modified", LongType(), True),
     StructField("price_change_number", LongType(), True),
-    StructField("extracted_at", TimestampType(), True)
+    StructField("extracted_at", StringType(), True)
 ])
 
 df_apps = spark.createDataFrame(apps, schema=schema_app_list)
