@@ -28,7 +28,7 @@ df_apps = spark.read.table("steam_analytics.bronze.app_list")
 games_list = df_apps.select("appid").toPandas().to_dict("records")
 
 # IMPORTANT: await seems like an error just in local not in Databricks UI
-player_count = await get_all_player_counts(api_key=api_key, games=games_list)
+player_count = await get_all_player_counts(api_key=api_key, games=games_list) # pyright: ignore
 
 # COMMAND ----------
 from pyspark.sql.types import StructType, StructField, IntegerType, TimestampType
@@ -59,4 +59,5 @@ with open(landing_zone, "w", encoding="utf-8") as json_file:
     .option("checkpointLocation", "/Volumes/steam_analytics/bronze/checkpoint/steam_player_count/")
     .trigger(availableNow=True)
     .toTable("steam_analytics.bronze.player_count")
+    .awaitTermination()
 )

@@ -64,7 +64,7 @@ games = (
 
 # COMMAND ----------
 try:
-    app_details = await get_all_apps_details(games=games)
+    app_details = await get_all_apps_details(games=games) # pyright: ignore
 
 finally:
     from pyspark.sql.types import (
