@@ -1,0 +1,51 @@
+resources:
+  jobs:
+    daily_pipeline:
+
+      name: Steam Daily Pipeline
+      schedule:
+        quartz_cron_expression: "0 15 16 * * ?"
+        timezone_id: "UTC"
+
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "1"
+            dependencies:
+              - aiohttp
+
+      tasks:
+        # Extraction Bronze
+        - task_key: extract_app_list
+          notebook_task:
+            notebook_path: ../src/bronze/app_list.py
+          environment_key: default
+        - task_key: extract_app_details
+          depends_on:
+            - task_key: extract_app_list
+          notebook_task:
+            notebook_path: ../src/bronze/app_details.py
+          environment_key: default
+        - task_key: extract_app_reviews
+          depends_on:
+            - task_key: extract_app_list
+          notebook_task:
+            notebook_path: ../src/bronze/app_reviews.py
+          environment_key: default
+        
+        # Transformation Silver
+        - task_key: transform_app_list
+          depends_on:
+            - task_key: extract_app_list
+          notebook_task:
+            notebook_path: ../src/silver/silver_app_list.py
+        - task_key: transform_app_details
+          depends_on:
+            - task_key: extract_app_details
+          notebook_task:
+            notebook_path: ../src/silver/silver_app_details.py
+        - task_key: transform_app_reviews
+          depends_on:
+            - task_key: extract_app_reviews
+          notebook_task:
+            notebook_path: ../src/silver/silver_app_reviews.py

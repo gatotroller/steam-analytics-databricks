@@ -1,14 +1,8 @@
 bundle:
   name: steam_analytics_platform
 
-resources:
-  jobs:
-    daily_ingest:
-      name: Extractor
-      tasks:
-        - task_key: Extract_Data
-          notebook_task:
-            notebook_path: ./src/bronze/app_list.py
+include:
+  - resources/*.yml
 
 targets:
   dev:

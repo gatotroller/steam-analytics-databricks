@@ -1,0 +1,29 @@
+resources:
+  jobs:
+    hourly_ingest:
+
+      name: Steam Player Count
+      schedule:
+        quartz_cron_expression: "0 0 */2 * * ?"  # Every 4 hours
+        timezone_id: "UTC"
+
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "1"
+            dependencies:
+              - aiohttp
+
+      tasks:
+        # Extraction Bronze
+        - task_key: extract_player_count
+          notebook_task:
+            notebook_path: ../src/bronze/player_count.py
+          environment_key: default
+
+        # Transformation Silver
+        - task_key: transform_player_count
+          depends_on:
+            - task_key: extract_player_count
+          notebook_task:
+            notebook_path: ../src/silver/silver_player_count.py
