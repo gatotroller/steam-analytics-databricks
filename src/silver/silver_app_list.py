@@ -4,6 +4,8 @@ import pyspark.sql.functions as F
 # COMMAND ----------
 df_bronze_apps = spark.read.table("steam_analytics.bronze.app_list")
 
+spark.sql("CREATE SCHEMA IF NOT EXISTS steam_analytics.silver")
+
 df_silver_apps = (
     df_bronze_apps
     .filter(

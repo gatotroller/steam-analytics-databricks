@@ -3,6 +3,7 @@ import pyspark.sql.functions as F
 
 # COMMAND ----------
 spark.sql("CREATE VOLUME IF NOT EXISTS steam_analytics.silver.checkpoint")
+spark.sql("CREATE SCHEMA IF NOT EXISTS steam_analytics.silver")
 df_bronze_player_count = spark.readStream.table("steam_analytics.bronze.player_count")
 
 df_silver_player_count = (

@@ -20,6 +20,7 @@ def flatten_app_details(df):
 
 # COMMAND ----------
 df_bronze_app_details = flatten_app_details(spark.read.table("steam_analytics.bronze.app_details"))
+spark.sql("CREATE SCHEMA IF NOT EXISTS steam_analytics.silver")
 silver_table_name = "steam_analytics.silver.app_details"
 
 # First execution
