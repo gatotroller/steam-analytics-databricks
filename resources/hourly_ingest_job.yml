@@ -27,3 +27,10 @@ resources:
             - task_key: extract_player_count
           notebook_task:
             notebook_path: ../src/silver/silver_player_count.py
+
+        # Load Gold Layer
+        - task_key: create_view_player_count
+          depends_on:
+            - task_key: transform_player_count
+          notebook_task:
+            notebook_path: ../src/gold/gold_views_hourly.sql

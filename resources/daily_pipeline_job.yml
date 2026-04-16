@@ -49,3 +49,16 @@ resources:
             - task_key: extract_app_reviews
           notebook_task:
             notebook_path: ../src/silver/silver_app_reviews.py
+
+        # Load Gold Layer
+        - task_key: create_views___app_list___app_reviews
+          depends_on:
+            - task_key: transform_app_list
+            - task_key: transform_app_reviews
+          notebook_task:
+            notebook_path: ../src/gold/gold_views_daily.sql
+        - task_key: create_mv_app_details
+          depends_on:
+            - task_key: transform_app_details
+          notebook_task:
+            notebook_path: ../src/gold/gold_mv_app_details.sql

@@ -1,4 +1,4 @@
-# Databricks notebook source
+-- Databricks notebook source
 CREATE OR REFRESH MATERIALIZED VIEW steam_analytics.gold.gold_app_details
 AS
 SELECT
