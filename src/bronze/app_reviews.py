@@ -32,8 +32,7 @@ if exists_table:
     df_reviews = spark.read.table(app_reviews_name)
 
     latest_batch = df_reviews.agg(F.max("extracted_at")).collect()[0][0]
-    latest_batch_dt = datetime.datetime.fromisoformat(latest_batch)
-    last_shift = get_logical_shift(latest_batch_dt)
+    last_shift = get_logical_shift(latest_batch)
 
     current_time = datetime.datetime.now(datetime.timezone.utc)
     current_shift = get_logical_shift(current_time)

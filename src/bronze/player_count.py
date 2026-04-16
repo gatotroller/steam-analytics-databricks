@@ -15,6 +15,9 @@ path_src = os.path.abspath(os.path.join(path_current, ".."))
 if path_src not in sys.path:
     sys.path.append(path_src)
 
+if not spark.catalog.tableExists("steam_analytics.bronze.app_list"):
+    dbutils.notebook.exit("Skipped: You need to have app_list first.")
+
 # COMMAND ----------
 from utils.steam_api_client import get_all_player_counts
 

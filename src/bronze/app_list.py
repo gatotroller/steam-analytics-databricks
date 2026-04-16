@@ -22,6 +22,8 @@ from utils.steam_api_client import get_app_list, get_logical_shift
 api_key = dbutils.secrets.get(scope="steam", key="api-key")
 spark.sql("CREATE CATALOG IF NOT EXISTS steam_analytics")
 spark.sql("CREATE SCHEMA IF NOT EXISTS steam_analytics.bronze")
+spark.sql("CREATE SCHEMA IF NOT EXISTS steam_analytics.silver")
+spark.sql("CREATE SCHEMA IF NOT EXISTS steam_analytics.gold")
 spark.sql("CREATE VOLUME IF NOT EXISTS steam_analytics.bronze.landing")
 spark.sql("CREATE VOLUME IF NOT EXISTS steam_analytics.bronze.checkpoint")
 

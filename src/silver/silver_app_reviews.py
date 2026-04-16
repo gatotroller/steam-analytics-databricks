@@ -5,12 +5,10 @@ import pyspark.sql.functions as F
 spark.sql("CREATE VOLUME IF NOT EXISTS steam_analytics.silver.checkpoint")
 df_bronze_reviews = spark.readStream.table("steam_analytics.bronze.app_reviews")
 
-spark.sql("CREATE SCHEMA IF NOT EXISTS steam_analytics.silver")
-
 df_silver_reviews = (
     df_bronze_reviews
     .filter(F.col("total_reviews") > 0)
-    .withColumn("review_score", F.round(F.col("total_positive") / F.col("total_reviews"), 4))
+    .withColumn("review_score", F.round(F.col("total_positive") / F.col("total_reviews"), 4) * 100)
     .withColumn("extracted_at_Date", F.to_date("extracted_at"))
     .select(
         "appid",

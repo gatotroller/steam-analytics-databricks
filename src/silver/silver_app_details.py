@@ -20,7 +20,6 @@ def flatten_app_details(df):
 
 # COMMAND ----------
 df_bronze_app_details = flatten_app_details(spark.read.table("steam_analytics.bronze.app_details"))
-spark.sql("CREATE SCHEMA IF NOT EXISTS steam_analytics.silver")
 silver_table_name = "steam_analytics.silver.app_details"
 
 # First execution
@@ -44,6 +43,15 @@ if not spark.catalog.tableExists(silver_table_name):
 
 # Incremental execution
 else:
+
+    w_dedup = Window.partitionBy("appid").orderBy(F.col("extracted_at_game").desc())
+    df_bronze_app_details = (
+        df_bronze_app_details
+        .withColumn("rn", F.row_number().over(w_dedup))
+        .filter("rn = 1")
+        .drop("rn")
+    )
+
     df_silver = spark.read.table(silver_table_name)
     
     df_bronze_staged = df_bronze_app_details.withColumn("merge_key", F.col("appid"))
