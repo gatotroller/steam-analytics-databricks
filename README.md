@@ -6,7 +6,7 @@ The Steam Analytics Platform is an end-to-end data engineering solution designed
 The project is built entirely on the Databricks Data Intelligence Platform, utilizing asynchronous data ingestion, the Medallion Architecture, and Databricks Asset Bundles (DABs) for infrastructure as code. The final dimensional model is optimized for direct consumption via Databricks Lakeview dashboards.
 
 ## Architecture
-
+![Steam Analytics Architecture](assets/architecture_diagram.png)
 
 ## Tech Stack
 * **Compute & Processing:** Databricks Runtime (DBR) 15.3+ LTS, Apache Spark (PySpark), Spark SQL.
