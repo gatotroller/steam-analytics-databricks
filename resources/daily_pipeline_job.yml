@@ -20,12 +20,14 @@ resources:
           notebook_task:
             notebook_path: ../src/bronze/app_list.py
           environment_key: default
+
         - task_key: extract_app_details
           depends_on:
             - task_key: extract_app_list
           notebook_task:
             notebook_path: ../src/bronze/app_details.py
           environment_key: default
+
         - task_key: extract_app_reviews
           depends_on:
             - task_key: extract_app_list
@@ -39,16 +41,21 @@ resources:
             - task_key: extract_app_list
           notebook_task:
             notebook_path: ../src/silver/silver_app_list.py
+          environment_key: default
+
         - task_key: transform_app_details
           depends_on:
             - task_key: extract_app_details
           notebook_task:
             notebook_path: ../src/silver/silver_app_details.py
+          environment_key: default
+
         - task_key: transform_app_reviews
           depends_on:
             - task_key: extract_app_reviews
           notebook_task:
             notebook_path: ../src/silver/silver_app_reviews.py
+          environment_key: default
 
         # Load Gold Layer
         - task_key: create_views___app_list___app_reviews
@@ -57,8 +64,11 @@ resources:
             - task_key: transform_app_reviews
           notebook_task:
             notebook_path: ../src/gold/gold_views_daily.sql
+          environment_key: default
+
         - task_key: create_mv_app_details
           depends_on:
             - task_key: transform_app_details
           notebook_task:
             notebook_path: ../src/gold/gold_mv_app_details.sql
+          environment_key: default

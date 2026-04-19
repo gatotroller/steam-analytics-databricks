@@ -30,18 +30,21 @@ exists_table = spark.catalog.tableExists(app_reviews_name)
 
 if exists_table:
     df_reviews = spark.read.table(app_reviews_name)
-
     latest_batch = df_reviews.agg(F.max("extracted_at")).collect()[0][0]
-    last_shift = get_logical_shift(latest_batch)
 
-    current_time = datetime.datetime.now(datetime.timezone.utc)
-    current_shift = get_logical_shift(current_time)
+    if latest_batch is None:
+        pass
+    else:
+        last_shift = get_logical_shift(latest_batch)
 
-    # Check if you already execute the code between 4:00 pm - 3:59 pm
-    # 4:00 pm is the time that steam refresh their catalog
-    
-    if current_shift == last_shift:
-        dbutils.notebook.exit("Skipped: You already execute this code.")
+        current_time = datetime.datetime.now(datetime.timezone.utc)
+        current_shift = get_logical_shift(current_time)
+
+        # Check if you already execute the code between 4:00 pm - 3:59 pm
+        # 4:00 pm is the time that steam refresh their catalog
+        
+        if current_shift == last_shift:
+            dbutils.notebook.exit("Skipped: You already execute this code.")
 
 # COMMAND ----------
 # IMPORTANT: await seems like an error just in local not in Databricks UI

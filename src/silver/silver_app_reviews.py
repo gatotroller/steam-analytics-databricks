@@ -28,19 +28,3 @@ df_silver_reviews = (
     .toTable("steam_analytics.silver.reviews")
     .awaitTermination()
 )
-
-# COMMAND ----------
-from pyspark.sql.types import StructType, StructField, IntegerType, StringType, LongType, TimestampType
-import json
-
-schema_reviews = StructType([
-    StructField("appid", IntegerType(), True),
-    StructField("review_score", IntegerType(), True),
-    StructField("review_score_desc", StringType(), True),
-    
-    StructField("total_positive", LongType(), True),
-    StructField("total_negative", LongType(), True),
-    StructField("total_reviews", LongType(), True),
-    
-    StructField("extracted_at", TimestampType(), True) 
-])

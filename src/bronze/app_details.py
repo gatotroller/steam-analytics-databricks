@@ -67,6 +67,11 @@ try:
     app_details = await get_all_apps_details(games=games) # pyright: ignore
 
 finally:
+    # Auto Loader runs in `finally` because get_all_apps_details buffers results to the
+    # landing zone in batches of 200 (Steam API cap: 200 requests / 5 min, ~42hr for 100k apps).
+    # If the async extraction fails partway through (network error, timeout, process kill),
+    # we still want to ingest whatever batches already landed on disk — otherwise we'd
+    # lose hours of successful extractions on a single late-stage failure.
     from pyspark.sql.types import (
         StructType, StructField, StringType, IntegerType, 
         BooleanType, ArrayType, TimestampType, LongType

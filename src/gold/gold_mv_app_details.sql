@@ -1,9 +1,9 @@
 -- Databricks notebook source
-CREATE OR REFRESH MATERIALIZED VIEW steam_analytics.gold.gold_app_details
-AS
+
+CREATE OR REPLACE VIEW steam_analytics.gold.gold_app_details AS
 SELECT
   appid,
-  cast(extracted_at_game AS date),
+  cast(extracted_at_game AS date) AS extracted_date,
   is_free,
   short_description,
   header_image,
@@ -17,37 +17,37 @@ SELECT
   is_current
 FROM steam_analytics.silver.app_details;
 
-CREATE OR REFRESH MATERIALIZED VIEW steam_analytics.gold.Bridge_App_Developer
-AS
+CREATE OR REPLACE TABLE steam_analytics.gold.Bridge_App_Developer AS
 SELECT DISTINCT
   appid,
-  explode(developers) AS developers
-FROM steam_analytics.silver.app_details;
+  explode(developers) AS developer
+FROM steam_analytics.silver.app_details
+WHERE is_current = true;
 
-CREATE OR REFRESH MATERIALIZED VIEW steam_analytics.gold.Bridge_App_Publisher
-AS
+CREATE OR REPLACE TABLE steam_analytics.gold.Bridge_App_Publisher AS
 SELECT DISTINCT
   appid,
-  explode(publishers) AS publishers
-FROM steam_analytics.silver.app_details;
+  explode(publishers) AS publisher
+FROM steam_analytics.silver.app_details
+WHERE is_current = true;
 
-CREATE OR REFRESH MATERIALIZED VIEW steam_analytics.gold.Bridge_App_Genre AS
+CREATE OR REPLACE TABLE steam_analytics.gold.Bridge_App_Genre AS
 SELECT DISTINCT
     appid,
     TRIM(genre_name) AS genre_name
 FROM steam_analytics.silver.app_details
 LATERAL VIEW explode(split(genres, ',')) AS genre_name
-WHERE genre_name != '';
+WHERE genre_name != '' AND is_current = true;
 
-CREATE OR REFRESH MATERIALIZED VIEW steam_analytics.gold.Bridge_App_Category AS
+CREATE OR REPLACE TABLE steam_analytics.gold.Bridge_App_Category AS
 SELECT DISTINCT
     appid,
     TRIM(category_name) AS category_name
 FROM steam_analytics.silver.app_details
 LATERAL VIEW explode(split(categories, ',')) AS category_name
-WHERE category_name != '';
+WHERE category_name != '' AND is_current = true;
 
-CREATE OR REFRESH MATERIALIZED VIEW steam_analytics.gold.dim_date AS
+CREATE TABLE IF NOT EXISTS steam_analytics.gold.dim_date AS
 WITH date_series AS (
   SELECT explode(sequence(
     to_date('2020-01-01'), 
@@ -58,15 +58,12 @@ WITH date_series AS (
 SELECT
   cast(date_format(date_val, 'yyyyMMdd') as INT) as date_key,
   date_val as full_date,
-
   year(date_val) as year,
   month(date_val) as month_num,
   weekofyear(date_val) as week_num,
   day(date_val) as day_of_month,
-  
   date_format(date_val, 'yyyy-MM') as year_month,
   concat(year(date_val), '-', lpad(weekofyear(date_val), 2, '0')) as year_week,
-  
   date_format(date_val, 'EEEE') as day_name,
   CASE WHEN dayofweek(date_val) IN (1, 7) THEN true ELSE false END as is_weekend
 FROM date_series;

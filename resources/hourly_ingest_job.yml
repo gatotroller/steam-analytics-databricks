@@ -4,7 +4,7 @@ resources:
 
       name: Steam Player Count
       schedule:
-        quartz_cron_expression: "0 0 */2 * * ?"  # Every 4 hours
+        quartz_cron_expression: "0 0 */2 * * ?"  # Every 2 hours
         timezone_id: "UTC"
 
       environments:
